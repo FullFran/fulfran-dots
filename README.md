@@ -103,10 +103,14 @@ nix run github:FullFran/fulfran-dots#tui
 
 El TUI te pregunta:
 - Qué preset querés (`full` para empezar, ver tabla abajo)
+- **Config mode** — cómo manejar tus dotfiles existentes:
+  - `safe` — instala paquetes pero **no sobreescribe** ningún dotfile (recomendado si ya tenés configs)
+  - `full` — activa todo (recomendado para instalaciones limpias)
+  - `custom` — te pregunta config por config qué querés activar
 - Tu hostname (lo sanitiza a minúsculas con guiones)
 - Tu usuario (default: tu `$USER`)
 
-Escribe `hosts/<tu-host>.nix` y registra `<tu-user>@<tu-host>` en tu `flake.nix`.
+Escribe `hosts/<tu-host>.nix` con los toggles explícitos y registra `<tu-user>@<tu-host>` en tu `flake.nix`.
 
 ### 5. Aplicá la config
 
@@ -161,6 +165,17 @@ modules = [
   ./hosts/mi-host.nix
 ];
 ```
+
+---
+
+## Cómo adoptar sin romper lo que tenés
+
+Si ya usás tmux, nvim u otras herramientas con tu propia config:
+
+1. Corré el TUI con `nix run github:FullFran/fulfran-dots#tui`
+2. Cuando pregunte el **config mode**, elegí `safe` — instala los paquetes pero no toca ninguno de tus archivos
+3. Una vez cómodo con el setup, editá `hosts/<tu-host>.nix` y cambiá los toggles que querés activar a `true`
+4. Cuando estés listo para todo, elegí `full` en la próxima corrida o setea todos los toggles a `true` a mano
 
 ---
 
