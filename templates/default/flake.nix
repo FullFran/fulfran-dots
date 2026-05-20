@@ -4,7 +4,10 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.05";
+      # master tracks the latest fixes (incl. structuredAttrs compatibility
+      # with Determinate Nix 3.x). Pin to a release branch only if you need
+      # extra stability and have verified it works on your platform.
+      url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     fulfran-dots.url = "github:FullFran/fulfran-dots";
@@ -12,20 +15,23 @@
 
   outputs = { nixpkgs, home-manager, fulfran-dots, ... }:
     let
-      system = "x86_64-linux";
-      pkgs = import nixpkgs {
-        inherit system;
-        config.allowUnfree = true;
-      };
+      # Helper: build a homeConfiguration for any system. Each host below
+      # declares its own system string (e.g. "aarch64-darwin",
+      # "x86_64-linux") so the same flake works across machines.
+      mkHome = system: modules:
+        home-manager.lib.homeManagerConfiguration {
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
+          inherit modules;
+        };
     in {
       homeConfigurations = {
-        "user@example-host" = home-manager.lib.homeManagerConfiguration {
-          inherit pkgs;
-          modules = [
-            fulfran-dots.presets.full
-            ./hosts/example.nix
-          ];
-        };
+        "user@example-host" = mkHome "x86_64-linux" [
+          fulfran-dots.presets.full
+          ./hosts/example.nix
+        ];
         # FULFRAN_TUI_INSERT_HERE
       };
     };
