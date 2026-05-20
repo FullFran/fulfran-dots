@@ -370,10 +370,67 @@ PY
   printf 'Registered %s@%s in flake.nix\n' "$user" "$host" >&2
 fi
 
-# ── 10. Optional home-manager switch ─────────────────────────────────────────
+# ── 10. Mandatory dry-run (build only — no $HOME changes) ────────────────────
 
-if ui_confirm "Run home-manager switch --flake .#${user}@${host} -b backup now?"; then
-  nix run nixpkgs#home-manager -- switch --flake ".#${user}@${host}" -b backup
+printf '\nRunning dry-run (home-manager build -- no files in $HOME are touched yet)...\n' >&2
+
+if ! nix run nixpkgs#home-manager -- build --flake ".#${user}@${host}"; then
+  cat >&2 <<EOF
+
+Dry-run failed. Read the error above carefully.
+
+Nothing was changed in your \$HOME.
+
+To recover:
+  - Edit hosts/${host}.nix (e.g. flip some toggle to false) and re-run this TUI, OR
+  - Edit flake.nix manually, OR
+  - Open an issue: https://github.com/FullFran/fulfran-dots/issues
+
+EOF
+  exit 1
 fi
 
-printf 'Done. Edit hosts/%s.nix to customize.\n' "$host" >&2
+cat >&2 <<EOF
+
+Dry-run OK. Build succeeded.
+
+Inspection:
+  - Activation script:       ./result/activate
+  - Files that would be written: ls -la ./result/home-files/
+  - Diff vs current state (if home-manager already installed): home-manager generations
+
+Enabled configs in this build:
+EOF
+
+[ "$tog_enableBash"  = "true" ] && printf '  - shell.enableBash    (writes ~/.bashrc, ~/.config/bash/)\n' >&2
+[ "$tog_enableZsh"   = "true" ] && printf '  - shell.enableZsh     (writes ~/.zshrc, ~/.config/zsh/)\n' >&2
+[ "$tog_tmux"        = "true" ] && printf '  - tmux.enableConfig   (writes ~/.config/tmux/tmux.conf)\n' >&2
+[ "$tog_ghostty"     = "true" ] && printf '  - ghostty.enableConfig (writes ~/.config/ghostty/config)\n' >&2
+[ "$tog_nvim"        = "true" ] && printf '  - nvim.enableConfig   (writes ~/.config/nvim/ -- recursive)\n' >&2
+[ "$tog_lazygit"     = "true" ] && printf '  - lazygit.enableConfig (writes ~/.config/lazygit/config.yml)\n' >&2
+[ "$tog_btop"        = "true" ] && printf '  - btop.enableConfig   (writes ~/.config/btop/btop.conf)\n' >&2
+[ "$tog_gitHelpers"  = "true" ] && printf '  - dev.enableGitHelpers (small shell function, no file overwrite)\n' >&2
+[ "$tog_jdk"         = "true" ] && printf '  - dev.enableJdk       (installs JDK 21 -- heavy)\n' >&2
+
+printf '\nExisting files will be backed up with .backup extension before replacement (-b backup flag).\n\n' >&2
+
+# ── 11. Optional switch (now with informed consent) ───────────────────────────
+
+if ui_confirm "Apply now with home-manager switch -b backup? (you can re-run later: nix run nixpkgs#home-manager -- switch --flake \".#${user}@${host}\" -b backup)"; then
+  nix run nixpkgs#home-manager -- switch --flake ".#${user}@${host}" -b backup
+  printf '\nDone. Open a new terminal to pick up the new environment.\n' >&2
+else
+  cat >&2 <<EOF
+
+Switch skipped. Nothing was changed in your \$HOME.
+
+To apply later when you are ready:
+  nix run nixpkgs#home-manager -- switch --flake ".#${user}@${host}" -b backup
+
+To undo any toggle in your config:
+  edit hosts/${host}.nix and toggle the booleans, then re-run this TUI or the command above.
+
+EOF
+fi
+
+printf '\nTUI complete. Generated host file: hosts/%s.nix\n' "$host" >&2
