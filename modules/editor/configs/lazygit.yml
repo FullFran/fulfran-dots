@@ -1,0 +1,41 @@
+gui:
+  # Tokyo Night theme for lazygit
+  theme:
+    activeBorderColor:
+      - "#7aa2f7"
+      - bold
+    inactiveBorderColor:
+      - "#414868"
+    optionsTextColor:
+      - "#7dcfff"
+    selectedLineBgColor:
+      - "#283457"
+    selectedRangeBgColor:
+      - "#283457"
+    cherryPickedCommitBgColor:
+      - "#449dab"
+    cherryPickedCommitFgColor:
+      - "#c0caf5"
+    unstagedChangesColor:
+      - "#f7768e"
+    defaultFgColor:
+      - "#c0caf5"
+  showIcons: true
+  sidePanelWidth: 0.33
+  mainPanelSplitMode: 'flexible'
+
+git:
+  paging:
+    colorArg: always
+    pager: delta --dark --paging=never
+
+os:
+  editCommand: 'nvim'
+  editCommandTemplate: '{{editor}} {{filename}}'
+
+customCommands:
+  - key: 'W'
+    command: 'git worktree add ../{{.SelectedLocalBranch.Name}}-wt/{{.SelectedLocalBranch.Name}} {{.SelectedLocalBranch.Name}}'
+    context: 'localBranches'
+    description: 'Create worktree for branch'
+    loadingText: 'Creating worktree...'
