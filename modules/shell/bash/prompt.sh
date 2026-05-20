@@ -13,6 +13,9 @@ DIM='\[\e[2m\]'
 
 # Load git-sh-prompt (provides __git_ps1)
 for __gp in \
+    /opt/homebrew/etc/bash_completion.d/git-prompt.sh \
+    /usr/local/etc/bash_completion.d/git-prompt.sh \
+    /Library/Developer/CommandLineTools/usr/share/git-core/git-prompt.sh \
     /usr/lib/git-core/git-sh-prompt \
     /usr/share/git/completion/git-prompt.sh \
     /usr/share/git-core/contrib/completion/git-prompt.sh \
