@@ -11,7 +11,7 @@
       yazi
       ffmpegthumbnailer
       unar
-      poppler_utils
+      poppler-utils
       direnv
       delta
       gh
