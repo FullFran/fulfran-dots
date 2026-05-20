@@ -141,10 +141,8 @@ if ! grep -q '# FULFRAN_TUI_INSERT_HERE' flake.nix; then
   printf 'Add the entry for "%s@%s" manually.\n' "$user" "$host" >&2
 else
   # Try Python3 first for clean string substitution, fall back to sed
-  python3 - "$user" "$host" "$preset" <<'PY' 2>/dev/null || {
-    # sed fallback
-    sed -i "s|# FULFRAN_TUI_INSERT_HERE|        \"${user}@${host}\" = home-manager.lib.homeManagerConfiguration {\n          inherit pkgs;\n          modules = [ fulfran-dots.presets.${preset} .\/hosts\/${host}.nix ];\n        };\n        # FULFRAN_TUI_INSERT_HERE|" flake.nix
-  }
+  _patch_with_python() {
+    python3 - "$1" "$2" "$3" <<'PY'
 import sys, pathlib
 u, h, preset = sys.argv[1], sys.argv[2], sys.argv[3]
 p = pathlib.Path("flake.nix")
@@ -159,6 +157,18 @@ entry = (
 new = src.replace("# FULFRAN_TUI_INSERT_HERE", entry)
 p.write_text(new)
 PY
+  }
+
+  _patch_with_sed() {
+    # sed fallback
+    sed -i "s|# FULFRAN_TUI_INSERT_HERE|        \"${user}@${host}\" = home-manager.lib.homeManagerConfiguration {\n          inherit pkgs;\n          modules = [ fulfran-dots.presets.${preset} .\/hosts\/${host}.nix ];\n        };\n        # FULFRAN_TUI_INSERT_HERE|" flake.nix
+  }
+
+  if have python3; then
+    _patch_with_python "$user" "$host" "$preset" || _patch_with_sed
+  else
+    _patch_with_sed
+  fi
   printf 'Registered %s@%s in flake.nix\n' "$user" "$host" >&2
 fi
 
