@@ -1,7 +1,11 @@
 { pkgs, ... }:
-{
+
+let
+  tui = pkgs.writeShellScriptBin "fulfran-tui"
+    (builtins.readFile ../tui/bootstrap.sh);
+in {
   tui = {
     type = "app";
-    program = "";
+    program = "${tui}/bin/fulfran-tui";
   };
 }
