@@ -1,5 +1,42 @@
 # fulfran-dots
 
+## Si ya lo instalaste y se te rompió algo
+
+Si la shell no abre o tu config fue sobreescrita, estos pasos te sacan del apuro:
+
+**1. Recuperar la shell si no abre:**
+```bash
+exec /bin/zsh -f
+# o con bash:
+exec /bin/bash --norc
+```
+
+Si sigue sin abrir, agregar `FULFRAN_NO_TMUX=1` al entorno antes de abrir la terminal evita que se intente arrancar tmux.
+
+**2. Recuperar archivos sobreescritos:**
+```bash
+ls ~/.config/                  # buscar archivos .backup
+ls ~/ | grep backup            # buscar en HOME
+# Ejemplo para tmux:
+mv ~/.config/tmux/tmux.conf.backup ~/.config/tmux/tmux.conf
+```
+
+**3. Volver a una generación anterior de home-manager:**
+```bash
+nix run github:nix-community/home-manager -- generations
+nix run github:nix-community/home-manager -- rollback
+# o activar una generación específica:
+# /nix/store/<hash>-home-manager-generation/activate
+```
+
+**4. Si el flake ya no evalúa:**
+```bash
+nix flake check --no-write-lock-file
+nix flake update
+```
+
+---
+
 > Base reutilizable de configuraciones (tmux, ghostty, neovim, shell, dev tools) en Nix + home-manager. Para que tu equipo levante el mismo entorno en 5 minutos.
 
 ---
