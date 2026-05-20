@@ -112,6 +112,8 @@ El TUI te pregunta:
 
 Escribe `hosts/<tu-host>.nix` con los toggles explícitos y registra `<tu-user>@<tu-host>` en tu `flake.nix`.
 
+Antes de ofrecerte el switch, el TUI corre un **dry-run obligatorio** (`home-manager build`) que evalúa y construye la derivación en el Nix store — **no toca un solo archivo de tu HOME hasta que vos confirmes después del build OK**. Si el build falla, el TUI aborta y te muestra el error; nunca llega a ofrecerte el switch.
+
 ### 5. Aplicá la config
 
 ```bash
