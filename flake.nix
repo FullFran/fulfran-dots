@@ -11,8 +11,17 @@
 
   outputs = { self, nixpkgs, home-manager, ... }:
     let
-      pkgs = import nixpkgs {
-        system = "x86_64-linux";
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
+
+      forAllSystems = nixpkgs.lib.genAttrs systems;
+
+      pkgsFor = system: import nixpkgs {
+        inherit system;
         config.allowUnfree = true;
       };
     in {
@@ -40,6 +49,16 @@
         description = "Skeleton private flake consuming fulfran-dots";
       };
 
-      apps.x86_64-linux = import ./apps/tui.nix { inherit pkgs; };
+      apps = forAllSystems (system:
+        import ./apps/tui.nix { pkgs = pkgsFor system; }
+      );
+
+      packages = forAllSystems (system:
+        let pkgs = pkgsFor system;
+        in {
+          tui = pkgs.writeShellScriptBin "fulfran-tui"
+            (builtins.readFile ./tui/bootstrap.sh);
+        }
+      );
     };
 }

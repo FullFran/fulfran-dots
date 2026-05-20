@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 {
   # Base terminal packages — always installed when terminal module is imported.
@@ -9,5 +9,7 @@
     nerd-fonts.iosevka
   ];
 
-  fonts.fontconfig.enable = true;
+  # fontconfig is Linux-only; on macOS fonts in ~/.nix-profile/share/fonts are
+  # picked up automatically by the OS font system.
+  fonts.fontconfig.enable = lib.mkIf pkgs.stdenv.isLinux true;
 }
