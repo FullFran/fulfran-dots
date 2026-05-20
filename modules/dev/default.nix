@@ -1,15 +1,15 @@
-{ pkgs, ... }:
+{ config, lib, ... }:
 
 {
-  home.packages = with pkgs; [
-    git
-    lazygit
-    gh
-    neovim
-    nodejs_22
-    pnpm
-    bun
-    go
-    jdk21
+  imports = [
+    ./packages.nix
   ];
+
+  programs.bash.initExtra = lib.mkIf config.programs.fulfran.dev.enableGitHelpers (
+    builtins.readFile ./git-helpers.sh
+  );
+
+  programs.zsh.initExtra = lib.mkIf config.programs.fulfran.dev.enableGitHelpers (
+    builtins.readFile ./git-helpers.sh
+  );
 }
