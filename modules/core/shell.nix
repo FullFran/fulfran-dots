@@ -1,30 +1,25 @@
-{ config, ... }:
+{ config, lib, ... }:
 
 {
-  home.sessionVariables = {
+  home.sessionVariables = lib.mkIf config.programs.fulfran.core.enable {
     ZDOTDIR = "${config.home.homeDirectory}/.config/zsh";
     PNPM_HOME = "${config.home.homeDirectory}/.local/share/pnpm";
   };
 
-  home.sessionPath = [ "${config.home.homeDirectory}/.local/share/pnpm" ];
+  home.sessionPath = lib.mkIf config.programs.fulfran.core.enable [
+    "${config.home.homeDirectory}/.local/share/pnpm"
+  ];
 
-  programs.zsh = {
+  programs.zoxide = lib.mkIf config.programs.fulfran.core.enable {
     enable = true;
-    dotDir = ".config/zsh";
-    autosuggestion.enable = true;
-    syntaxHighlighting.enable = true;
-    enableCompletion = true;
-    history = {
-      path = "${config.home.homeDirectory}/.config/zsh/.zsh_history";
-      size = 50000;
-      save = 50000;
-      ignoreDups = true;
-      share = true;
-    };
+    enableBashIntegration = true;
+    enableZshIntegration = true;
   };
 
-  programs.fzf = {
+  programs.direnv = lib.mkIf config.programs.fulfran.core.enable {
     enable = true;
+    enableBashIntegration = true;
     enableZshIntegration = true;
+    nix-direnv.enable = true;
   };
 }

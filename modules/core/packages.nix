@@ -1,32 +1,22 @@
-{ pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
-  home.packages = with pkgs; [
-    bat
-    eza
+  home.packages = lib.mkIf config.programs.fulfran.core.enable (with pkgs; [
+    git
+    gh
+    jq
     fd
     ripgrep
-    sd
+    bat
+    eza
     fzf
-    jq
-    tree
-    fastfetch
-    btop
-    libnotify
+    zoxide
+    atuin
+    direnv
     wget
     curl
-  ];
-
-  programs.zoxide = {
-    enable = true;
-    enableBashIntegration = true;
-    enableZshIntegration = true;
-  };
-
-  programs.direnv = {
-    enable = true;
-    enableBashIntegration = true;
-    enableZshIntegration = true;
-    nix-direnv.enable = true;
-  };
+    fastfetch
+    tree
+    btop
+  ]);
 }
