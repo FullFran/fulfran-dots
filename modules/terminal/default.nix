@@ -1,13 +1,9 @@
-{ pkgs, ... }:
-
+{ ... }:
 {
-  home.packages = with pkgs; [
-    tmux
-    tmuxPlugins.resurrect
-    tmuxPlugins.continuum
-    nerd-fonts.jetbrains-mono
-    nerd-fonts.iosevka
+  imports = [
+    ./packages.nix
+    ./tmux.nix
+    ./ghostty.nix
+    ./btop.nix
   ];
-
-  fonts.fontconfig.enable = true;
 }
