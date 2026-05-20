@@ -5,8 +5,9 @@
 # Steps:
 #   1. If no flake.nix in cwd, run nix flake init from template
 #   2. Prompt for preset (minimal / full / dev-only / terminal-only)
-#   3. Prompt for hostname (sanitized) and username, write hosts/<host>.nix
-#   4. Patch flake.nix homeConfigurations, offer home-manager switch
+#   3. Prompt for config mode (safe / full / custom)
+#   4. If custom, ask per toggle
+#   5. Prompt for hostname (sanitized) and username, write hosts/<host>.nix
 
 set -eu
 
@@ -86,6 +87,37 @@ ui_confirm() {
   fi
 }
 
+ui_yesno() {
+  # ui_yesno <prompt> <default: y|n>  -- prints "y" or "n" to stdout
+  prompt="$1"; default="${2:-n}"
+  if have gum; then
+    if gum confirm "$prompt"; then
+      printf 'y'
+    else
+      printf 'n'
+    fi
+  elif have whiptail; then
+    if whiptail --yesno "$prompt" 10 60; then
+      printf 'y'
+    else
+      printf 'n'
+    fi
+  else
+    if [ "$default" = "y" ]; then
+      printf '%s [Y/n]: ' "$prompt" >&2
+    else
+      printf '%s [y/N]: ' "$prompt" >&2
+    fi
+    read -r ans
+    case "$ans" in
+      y|Y) printf 'y' ;;
+      n|N) printf 'n' ;;
+      '')  printf '%s' "$default" ;;
+      *)   printf '%s' "$default" ;;
+    esac
+  fi
+}
+
 # ── 1. Prerequisites ────────────────────────────────────────────────────────
 
 have nix || { printf 'nix not found. Install via https://install.determinate.systems\n' >&2; exit 1; }
@@ -137,7 +169,114 @@ fi
 preset=$(ui_select "Pick a preset" minimal full dev-only terminal-only)
 preset="${preset:-full}"
 
-# ── 5. Hostname + sanitization ──────────────────────────────────────────────
+# ── 5. Config mode selection ─────────────────────────────────────────────────
+#
+# safe   — disable all config overwrites; install packages only
+# full   — enable all configs (replaces today's commented-out defaults)
+# custom — ask per toggle
+
+printf '\n' >&2
+printf 'Config mode:\n' >&2
+printf '  safe   = install packages only; do NOT overwrite your existing dotfiles (recommended for new users)\n' >&2
+printf '  full   = ship all configs (recommended for fresh installs or if you want everything)\n' >&2
+printf '  custom = choose per config\n' >&2
+printf '\n' >&2
+
+config_mode=$(ui_select "Pick a config mode" safe full custom)
+config_mode="${config_mode:-safe}"
+
+# ── 5a. Per-toggle resolution ────────────────────────────────────────────────
+#
+# Resolve each toggle to "true" or "false" based on the chosen config_mode.
+# core.enable is always true; dev.enableJdk defaults to false in all modes.
+
+_resolve_toggles() {
+  # mode: safe, full, or custom
+  mode="$1"
+
+  case "$mode" in
+    safe)
+      tog_enableBash="false"
+      tog_enableZsh="false"
+      tog_tmux="false"
+      tog_ghostty="false"
+      tog_nvim="false"
+      tog_lazygit="false"
+      tog_btop="false"
+      tog_gitHelpers="true"
+      tog_jdk="false"
+      ;;
+    full)
+      tog_enableBash="true"
+      tog_enableZsh="true"
+      tog_tmux="true"
+      tog_ghostty="true"
+      tog_nvim="true"
+      tog_lazygit="true"
+      tog_btop="true"
+      tog_gitHelpers="true"
+      tog_jdk="false"
+      ;;
+    custom)
+      printf '\nAnswer yes/no for each config. Hit Enter to accept the default shown.\n\n' >&2
+
+      tog_enableBash=$(ui_yesno \
+        "[shell.enableBash] Ship bash modular config? (would overwrite ~/.bashrc and ~/.config/bash/)" n)
+      tog_enableZsh=$(ui_yesno \
+        "[shell.enableZsh] Ship zsh modular config? (would overwrite ~/.zshrc and ~/.config/zsh/)" n)
+      tog_tmux=$(ui_yesno \
+        "[tmux] Use fulfran-dots' tmux.conf? (would overwrite ~/.tmux.conf and ~/.config/tmux/tmux.conf)" n)
+      tog_ghostty=$(ui_yesno \
+        "[ghostty] Use fulfran-dots' ghostty config? (would overwrite ~/.config/ghostty/config)" n)
+      tog_nvim=$(ui_yesno \
+        "[nvim] Use fulfran-dots' LazyVim config? (would overwrite ~/.config/nvim/)" n)
+      tog_lazygit=$(ui_yesno \
+        "[lazygit] Use fulfran-dots' lazygit config? (would overwrite ~/.config/lazygit/config.yml)" n)
+      tog_btop=$(ui_yesno \
+        "[btop] Use fulfran-dots' btop config? (would overwrite ~/.config/btop/btop.conf)" n)
+      tog_gitHelpers=$(ui_yesno \
+        "[dev.enableGitHelpers] Install gwt() git worktree helpers? (adds a small function to your shell, no file overwrite)" y)
+      tog_jdk=$(ui_yesno \
+        "[dev.enableJdk] Install JDK 21? (heavy download, opt-in)" n)
+      ;;
+    *)
+      # Fallback to safe
+      tog_enableBash="false"
+      tog_enableZsh="false"
+      tog_tmux="false"
+      tog_ghostty="false"
+      tog_nvim="false"
+      tog_lazygit="false"
+      tog_btop="false"
+      tog_gitHelpers="true"
+      tog_jdk="false"
+      ;;
+  esac
+}
+
+_resolve_toggles "$config_mode"
+
+# Convert y/n to true/false for custom mode results
+_yn_to_bool() {
+  case "$1" in
+    y) printf 'true'  ;;
+    *) printf 'false' ;;
+  esac
+}
+
+if [ "$config_mode" = "custom" ]; then
+  tog_enableBash=$(_yn_to_bool "$tog_enableBash")
+  tog_enableZsh=$(_yn_to_bool "$tog_enableZsh")
+  tog_tmux=$(_yn_to_bool "$tog_tmux")
+  tog_ghostty=$(_yn_to_bool "$tog_ghostty")
+  tog_nvim=$(_yn_to_bool "$tog_nvim")
+  tog_lazygit=$(_yn_to_bool "$tog_lazygit")
+  tog_btop=$(_yn_to_bool "$tog_btop")
+  tog_gitHelpers=$(_yn_to_bool "$tog_gitHelpers")
+  tog_jdk=$(_yn_to_bool "$tog_jdk")
+fi
+
+# ── 6. Hostname + sanitization ──────────────────────────────────────────────
 
 raw_host=$(ui_input "Hostname" "$(uname -n 2>/dev/null || printf 'my-host')")
 host=$(printf '%s' "$raw_host" \
@@ -146,18 +285,19 @@ host=$(printf '%s' "$raw_host" \
 
 [ -n "$host" ] || { printf 'Invalid hostname after sanitization.\n' >&2; exit 1; }
 
-# ── 6. Username ─────────────────────────────────────────────────────────────
+# ── 7. Username ─────────────────────────────────────────────────────────────
 
 user=$(ui_input "Username" "${USER:-user}")
 [ -n "$user" ] || { printf 'Username cannot be empty.\n' >&2; exit 1; }
 
 home_dir=$(_detect_home_dir "$user")
 
-# ── 7. Write hosts/<host>.nix ───────────────────────────────────────────────
+# ── 8. Write hosts/<host>.nix ───────────────────────────────────────────────
 
 mkdir -p hosts
 cat > "hosts/${host}.nix" <<EOF
 # Generated by fulfran-dots TUI on $(date -Iseconds 2>/dev/null || date)
+# Config mode: ${config_mode}
 { pkgs, lib, ... }:
 {
   home.username = "${user}";
@@ -168,20 +308,26 @@ cat > "hosts/${host}.nix" <<EOF
 
   home.stateVersion = "25.05";
 
-  # Override fulfran-dots toggles below. All defaults are true unless noted.
-  # programs.fulfran.tmux.enableConfig = false;       # keep your tmux.conf
-  # programs.fulfran.ghostty.enableConfig = false;    # keep your ghostty config
-  # programs.fulfran.nvim.enableConfig = false;       # keep your nvim
-  # programs.fulfran.shell.enableBash = false;        # keep your .bashrc
-  # programs.fulfran.shell.enableZsh = false;         # keep your .zshrc
-  # programs.fulfran.lazygit.enableConfig = false;    # keep your lazygit
-  # programs.fulfran.dev.enableJdk = true;            # opt-in to jdk21
+  # Generated by the TUI based on your "${config_mode}" choice.
+  # Edit any value here to customize after the initial setup.
+  programs.fulfran = {
+    core.enable = true;
+    shell.enableBash = ${tog_enableBash};
+    shell.enableZsh = ${tog_enableZsh};
+    tmux.enableConfig = ${tog_tmux};
+    ghostty.enableConfig = ${tog_ghostty};
+    nvim.enableConfig = ${tog_nvim};
+    lazygit.enableConfig = ${tog_lazygit};
+    btop.enableConfig = ${tog_btop};
+    dev.enableGitHelpers = ${tog_gitHelpers};
+    dev.enableJdk = ${tog_jdk};
+  };
 }
 EOF
 
 printf 'Wrote hosts/%s.nix\n' "$host" >&2
 
-# ── 8. Patch flake.nix at the marker ────────────────────────────────────────
+# ── 9. Patch flake.nix at the marker ────────────────────────────────────────
 
 if [ ! -f flake.nix ]; then
   printf 'flake.nix not found — cannot patch.\n' >&2
@@ -224,7 +370,7 @@ PY
   printf 'Registered %s@%s in flake.nix\n' "$user" "$host" >&2
 fi
 
-# ── 9. Optional home-manager switch ─────────────────────────────────────────
+# ── 10. Optional home-manager switch ─────────────────────────────────────────
 
 if ui_confirm "Run home-manager switch --flake .#${user}@${host} -b backup now?"; then
   nix run nixpkgs#home-manager -- switch --flake ".#${user}@${host}" -b backup
