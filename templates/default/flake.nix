@@ -12,20 +12,12 @@
 
   outputs = { nixpkgs, home-manager, fulfran-dots, ... }:
     let
-      system = "x86_64-linux";
-      pkgs = import nixpkgs {
+      pkgsFor = system: import nixpkgs {
         inherit system;
         config.allowUnfree = true;
       };
     in {
       homeConfigurations = {
-        "user@example-host" = home-manager.lib.homeManagerConfiguration {
-          inherit pkgs;
-          modules = [
-            fulfran-dots.presets.full
-            ./hosts/example.nix
-          ];
-        };
         # FULFRAN_TUI_INSERT_HERE
       };
     };
