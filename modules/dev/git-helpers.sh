@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Git Worktree Helpers
 # Usage:
 #   gwt add <branch>  - Create a worktree in ../<repo>-wt/<branch>
@@ -16,7 +17,8 @@ gwt() {
         return 1
       fi
 
-      local repo_name=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)")
+      local repo_name
+      repo_name=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)")
       if [ -z "$repo_name" ]; then
         echo "Error: Not in a git repository"
         return 1
@@ -27,19 +29,26 @@ gwt() {
 
       if git rev-parse --verify "$branch" >/dev/null 2>&1; then
         echo "Branch '$branch' exists. Creating worktree..."
-        git worktree add "$target_dir" "$branch"
+        git worktree add "$target_dir" "$branch" || {
+          echo "Error: Failed to create worktree."
+          return 1
+        }
       else
         echo "Branch '$branch' does not exist. Creating NEW branch and worktree..."
-        git worktree add -b "$branch" "$target_dir"
+        git worktree add -b "$branch" "$target_dir" || {
+          echo "Error: Failed to create worktree."
+          return 1
+        }
       fi
 
-      if [ $? -eq 0 ]; then
-        echo "Entering worktree..."
-        cd "$target_dir"
-      else
-        echo "Error: Failed to create worktree."
+      echo "Entering worktree..."
+      # A bare `cd` already propagates its status as the function's return value,
+      # but it fails silently right after printing "Entering worktree...". Say what
+      # actually went wrong instead of leaving a contradictory message on screen.
+      cd "$target_dir" || {
+        echo "Error: worktree created, but could not enter '$target_dir'."
         return 1
-      fi
+      }
       ;;
 
     ls)
@@ -53,7 +62,8 @@ gwt() {
         return 1
       fi
 
-      local repo_name=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)")
+      local repo_name
+      repo_name=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)")
       local target_dir="../${repo_name}-wt/${branch}"
 
       if [ -d "$target_dir" ]; then
