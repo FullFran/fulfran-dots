@@ -5,8 +5,6 @@
 set -e
 
 REPO="${REPO:-$(dirname "$(dirname "$(realpath "$0")")")}"
-PASS=0
-FAIL=1
 rc=0
 
 pass() { printf '\033[32m[PASS]\033[0m %s\n' "$1"; }
