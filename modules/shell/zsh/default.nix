@@ -19,7 +19,9 @@ lib.mkIf cfg.enableZsh {
       ignoreDups = true;
       share = true;
     };
-    initExtra = ''
+    # initContent replaces the deprecated initExtra. mkOrder 1000 reproduces the
+    # position initExtra used to occupy, so the generated .zshrc is unchanged.
+    initContent = lib.mkOrder 1000 ''
       ${readFile (dir + "/init.zsh")}
     '';
   };
