@@ -143,16 +143,6 @@ _detect_nix_system() {
   esac
 }
 
-_detect_home_dir() {
-  # Returns the platform-appropriate home directory path for a given user.
-  # $1 = username
-  uname_s=$(uname -s)
-  case "$uname_s" in
-    Darwin) printf '/Users/%s' "$1" ;;
-    *)      printf '/home/%s'  "$1" ;;
-  esac
-}
-
 nix_system=$(_detect_nix_system)
 
 # ── 3. Scaffold if no flake.nix ─────────────────────────────────────────────
@@ -289,8 +279,6 @@ host=$(printf '%s' "$raw_host" \
 
 user=$(ui_input "Username" "${USER:-user}")
 [ -n "$user" ] || { printf 'Username cannot be empty.\n' >&2; exit 1; }
-
-home_dir=$(_detect_home_dir "$user")
 
 # ── 8. Write hosts/<host>.nix ───────────────────────────────────────────────
 
