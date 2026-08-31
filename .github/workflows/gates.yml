@@ -9,7 +9,7 @@ jobs:
   gates:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # The secrets and history gates read every commit. The default
           # shallow checkout would hand them one commit and let them pass on
