@@ -270,7 +270,16 @@ fulfran-dots/
 
 ## Contribuir
 
-PRs bienvenidos. La condición: nada de configs personales (paths absolutos, usuarios hardcodeados, herramientas privadas). El script `scripts/portability-check.sh` valida los gates — si lo rompés, no entra.
+PRs bienvenidos. La condición: nada de configs personales (paths absolutos, usuarios hardcodeados, herramientas privadas) ni credenciales.
+
+```bash
+./tests/run-all.sh          # todos los gates
+./tests/secrets.test.sh     # solo credenciales
+```
+
+`scripts/portability-check.sh` sigue funcionando y llama a lo mismo. CI corre la suite en cada PR, así que si un gate falla, no entra.
+
+Los gates revisan **el árbol y la historia**: borrar un archivo filtrado lo deja intacto en todos los commits anteriores, así que un árbol limpio por sí solo no prueba nada. Y cada scanner se autoverifica plantando una violación y exigiendo cazarla — un detector que nunca se demostró que detecta algo es decoración.
 
 ---
 
