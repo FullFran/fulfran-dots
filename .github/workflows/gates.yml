@@ -1,0 +1,22 @@
+name: gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # The secrets and history gates read every commit. The default
+          # shallow checkout would hand them one commit and let them pass on
+          # a history they never saw.
+          fetch-depth: 0
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Run every gate
+        run: ./tests/run-all.sh
